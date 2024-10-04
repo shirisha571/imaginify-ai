@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -20,19 +21,32 @@ export async function createUser(user: CreateUserParams) {
 }
 
 // READ
-export async function getUserById(userId: string) {
+// Define the expected return type
+interface UserResult {
+  _id: string;
+  creditBalance: number;
+  error?: string; // Optional error message
+  user?: unknown; // Replace `any` with your actual user type
+}
+
+export async function getUserById(userId: string): Promise<UserResult> {
   try {
     await connectToDatabase();
 
     const user = await User.findOne({ clerkId: userId });
 
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      console.error(`User with ID ${userId} not found in the database`);
+      return { error: "User not found" }; // Return an error message or object
+    }
 
-    return JSON.parse(JSON.stringify(user));
+    return JSON.parse(JSON.stringify(user)); // Return user data
   } catch (error) {
-    handleError(error);
+    const errorMessage = handleError(error);
+    return { error: errorMessage }; // Return the error message
   }
 }
+
 
 // UPDATE
 export async function updateUser(clerkId: string, user: UpdateUserParams) {

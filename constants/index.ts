@@ -2,7 +2,7 @@ export const navLinks = [
     {
       label: "Home",
       route: "/",
-      icon: "public/assets/icons/home.svg",
+      icon: "/assets/icons/home.svg",
     },
     {
       label: "Image Restore",

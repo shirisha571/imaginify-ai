@@ -14,22 +14,21 @@ export function cn(...inputs: ClassValue[]) {
 // ERROR HANDLER
 export const handleError = (error: unknown) => {
   if (error instanceof Error) {
-    // This is a native JavaScript error (e.g., TypeError, RangeError)
-    console.error(error.message);
+    console.error("Error:", error.message);
     throw new Error(`Error: ${error.message}`);
   } else if (typeof error === "string") {
-    // This is a string error message
-    console.error(error);
+    console.error("Error:", error);
     throw new Error(`Error: ${error}`);
   } else {
-    // This is an unknown type of error
-    console.error(error);
-    throw new Error(`Unknown error: ${JSON.stringify(error)}`);
+    // Attempt to stringify the error for logging
+    console.error("Unknown error:", error);
+    throw new Error(`Unknown error: ${JSON.stringify(error, null, 2)}`);
   }
 };
 
 // PLACEHOLDER LOADER - while image is transforming
-const shimmer = (w: number, h: number) => `
+function shimmer(w: number, h: number) {
+  return `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <linearGradient id="g">
@@ -42,6 +41,7 @@ const shimmer = (w: number, h: number) => `
   <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
   <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
 </svg>`;
+}
 
 const toBase64 = (str: string) =>
   typeof window === "undefined"
@@ -108,7 +108,8 @@ export const getImageSize = (
       1000
     );
   }
-  return image?.[dimension] || 1000;
+  return aspectRatioOptions[image.aspectRatio as AspectRatioKey]?.[dimension] ?? 1000;
+
 };
 
 // DOWNLOAD IMAGE
