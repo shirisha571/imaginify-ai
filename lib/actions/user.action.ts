@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import User from "../database/models/user.model";
 import { connectToDatabase } from "../database/mongoose";
 import { handleError } from "../utils";
+import { UpdateResult } from "mongodb";
 
 // CREATE
 export async function createUser(user: CreateUserParams) {
@@ -49,7 +50,7 @@ export async function getUserById(userId: string): Promise<UserResult> {
 
 
 // UPDATE
-export async function updateUser(clerkId: string, user: UpdateUserParams) {
+export async function updateUserC(clerkId: string, user: UpdateUserParams) {
   try {
     await connectToDatabase();
 
@@ -88,20 +89,21 @@ export async function deleteUser(clerkId: string) {
 }
 
 // USE CREDITS
-export async function updateCredits(userId: string, creditFee: number) {
+export async function updateUserCredits(userId: string, credit: number) {
   try {
-    await connectToDatabase();
+      await connectToDatabase();
+      const result: UpdateResult = await User.updateOne(
+          { clerkId: userId },
+          { $set: { creditBalance: credit } }
+      );
 
-    const updatedUserCredits = await User.findOneAndUpdate(
-      { _id: userId },
-      { $inc: { creditBalance: creditFee }},
-      { new: true }
-    )
+      if (result.modifiedCount === 0) {
+          throw new Error("User credits update failed");
+      }
 
-    if(!updatedUserCredits) throw new Error("User credits update failed");
-
-    return JSON.parse(JSON.stringify(updatedUserCredits));
+      return result;
   } catch (error) {
-    handleError(error);
+      handleError(error);
   }
 }
+

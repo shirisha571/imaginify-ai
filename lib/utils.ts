@@ -7,6 +7,7 @@ import { twMerge } from "tailwind-merge";
 
 import { aspectRatioOptions } from "@/constants";
 
+// Class names merge utility
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -15,18 +16,19 @@ export function cn(...inputs: ClassValue[]) {
 export const handleError = (error: unknown) => {
   if (error instanceof Error) {
     console.error("Error:", error.message);
-    throw new Error(`Error: ${error.message}`);
+    // Return instead of throwing an error to handle it gracefully
+    return { success: false, message: `Error: ${error.message}` };
   } else if (typeof error === "string") {
     console.error("Error:", error);
-    throw new Error(`Error: ${error}`);
+    return { success: false, message: `Error: ${error}` };
   } else {
-    // Attempt to stringify the error for logging
+    // Attempt to stringify the unknown error for logging
     console.error("Unknown error:", error);
-    throw new Error(`Unknown error: ${JSON.stringify(error, null, 2)}`);
+    return { success: false, message: `Unknown error: ${JSON.stringify(error, null, 2)}` };
   }
 };
 
-// PLACEHOLDER LOADER - while image is transforming
+// Placeholder loader - while image is transforming
 function shimmer(w: number, h: number) {
   return `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -51,7 +53,6 @@ const toBase64 = (str: string) =>
 export const dataUrl = `data:image/svg+xml;base64,${toBase64(
   shimmer(1000, 1000)
 )}`;
-// ==== End
 
 // FORM URL QUERY
 export const formUrlQuery = ({
@@ -90,12 +91,11 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout | null;
   return (...args: any[]) => {
     if (timeoutId) clearTimeout(timeoutId);
-    // eslint-disable-next-line prefer-spread
-    timeoutId = setTimeout(() => func.apply(null, args), delay);
+    timeoutId = setTimeout(() => func(...args), delay);
   };
 };
 
-// GE IMAGE SIZE
+// GET IMAGE SIZE
 export type AspectRatioKey = keyof typeof aspectRatioOptions;
 export const getImageSize = (
   type: string,
@@ -109,7 +109,6 @@ export const getImageSize = (
     );
   }
   return aspectRatioOptions[image.aspectRatio as AspectRatioKey]?.[dimension] ?? 1000;
-
 };
 
 // DOWNLOAD IMAGE
@@ -119,7 +118,10 @@ export const download = (url: string, filename: string) => {
   }
 
   fetch(url)
-    .then((response) => response.blob())
+    .then((response) => {
+      if (!response.ok) throw new Error("Failed to download file");
+      return response.blob();
+    })
     .then((blob) => {
       const blobURL = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -129,13 +131,14 @@ export const download = (url: string, filename: string) => {
         a.download = `${filename.replace(" ", "_")}.png`;
       document.body.appendChild(a);
       a.click();
+      a.remove(); // Remove after click to keep DOM clean
     })
-    .catch((error) => console.log({ error }));
+    .catch((error) => console.error("Download error:", error));
 };
 
 // DEEP MERGE OBJECTS
 export const deepMergeObjects = (obj1: any, obj2: any) => {
-  if(obj2 === null || obj2 === undefined) {
+  if (obj2 === null || obj2 === undefined) {
     return obj1;
   }
 
